@@ -1,11 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
+
+// Import từ thư mục components
 import SeedForm from './components/SeedForm';
 import GeneratedResult from './components/GeneratedResult';
 import HistoryList from './components/HistoryList';
+
+// Import type
 import { SeedInput, GenerationState, HistoryItem, GeneratedContent } from './types';
-import { generateSeedPost, regenerateSeedImage } from './services/geminiService';
+
+// Import service đúng đường dẫn
+import { generateSeedPost, regenerateSeedImage } from './components/geminiService';
+
+// Icon
 import { Sprout, History as HistoryIcon, Download as DownloadIcon } from 'lucide-react';
+
 
 const App: React.FC = () => {
   const [generation, setGeneration] = useState<GenerationState>({
