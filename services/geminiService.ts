@@ -2,9 +2,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SeedInput, GeneratedContent } from "../types";
 
 const apiKey = process.env.API_KEY;
+if (!apiKey) console.error("❌ API_KEY is missing on server!");
+
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// Schema
+// JSON Schema
 const responseSchema = {
   type: "object",
   properties: {
@@ -14,28 +16,28 @@ const responseSchema = {
   required: ["postContent", "imagePrompt"]
 };
 
+// ⚡ Generate Facebook Post
 export const generateSeedPost = async (
   input: SeedInput
 ): Promise<GeneratedContent> => {
-  if (!apiKey) throw new Error("Missing API KEY");
-
+  
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-2.5-flash",
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema
     },
     systemInstruction:
-      "Bạn là chuyên gia Marketing nông nghiệp, văn phong thân thiện, gần gũi, đáng tin cậy, dùng nhiều emoji."
+      "Bạn là chuyên gia Marketing nông nghiệp, văn phong thân thiện, gần gũi, giàu cảm xúc và dễ viral."
   });
 
   const prompt = `
-    Viết bài bán hàng cho hạt giống:
+    Tạo bài đăng bán hàng cho hạt giống:
     - Tên hạt: ${input.seedName}
     - Giá: ${input.price}
     - Điểm mạnh: ${input.strongPoints}
-    - Thời gian thu hoạch: ${input.harvestTime}
-    - Không gian phù hợp: ${input.suitableSpace}
+    - Thu hoạch: ${input.harvestTime}
+    - Không gian: ${input.suitableSpace}
     ${input.recommendedCombos ? `Combo: ${input.recommendedCombos}` : ""}
     Link mua: ${input.purchaseLink}
   `;
@@ -43,7 +45,7 @@ export const generateSeedPost = async (
   const result = await model.generateContent(prompt);
   const json = JSON.parse(result.response.text());
 
-  // sinh ảnh
+  // generate image
   const imageBase64 = await regenerateSeedImage(json.imagePrompt);
 
   return {
@@ -53,22 +55,23 @@ export const generateSeedPost = async (
   };
 };
 
+// ⚡ Generate Image (Gemini 2.5 Flash Image)
 export const regenerateSeedImage = async (
   imagePrompt: string
 ): Promise<string | undefined> => {
+
   const imageModel = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash"
+    model: "gemini-2.5-flash-image"
   });
 
   const result = await imageModel.generateContent([
-    {
-      text: imagePrompt
-    }
+    { text: imagePrompt }
   ]);
 
-  const imagePart = result.response.candidates?.[0]?.content.parts.find(
-    (p) => p.inlineData
-  );
+  const part =
+    result.response.candidates?.[0]?.content.parts.find(
+      (p) => p.inlineData
+    );
 
-  return imagePart?.inlineData?.data;
+  return part?.inlineData?.data; // base64
 };
